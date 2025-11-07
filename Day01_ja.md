@@ -1,7 +1,3 @@
-承知いたしました。ご提供いただいた情報を基に、RHEM (Red Hat Edge Management) の初期設定と動作確認についてのまとめをMarkdown形式で作成します。**パスワードおよびユーザー名の一部（`tmorisu`）はマスク**して記載します。
-
------
-
 # 🚀 RHEM 初期設定と動作確認のまとめ
 
 このドキュメントは、FlightCtlの初期設定、CLIのインストール、ホスト設定、およびエージェントを含むカスタムOSイメージのビルドと公開の手順をまとめたものです。
@@ -126,7 +122,6 @@ sudo cp /etc/yum.repos.d/redhat.repo .
     export OCI_IMAGE_REPO="quay.io/*********/custom-rhel95-bootc"
     export OCI_IMAGE_TAG="1.0.0"
     ```
-    > **注意:** ユーザー名 (`tmorisu`) は**マスク**しています。
 2.  **イメージのビルド**
     ```bash
     sudo podman build -t ${OCI_IMAGE_REPO}:${OCI_IMAGE_TAG} .
