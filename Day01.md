@@ -151,5 +151,3 @@ sudo podman run --rm -it --privileged \
 ```
 
 The generated ISO image is saved in the `output` directory.
-
------
