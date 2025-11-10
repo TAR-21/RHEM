@@ -1,0 +1,79 @@
+FROM registry.redhat.io/rhel9/rhel-bootc:latest
+
+# --- 1. リポジトリ設定ファイルとエージェント設定ファイルの追加 ---
+
+# 特定されたファイル名 'redhat.repo' を /etc/yum.repos.d/ にコピーします。
+ADD redhat.repo /etc/yum.repos.d/
+
+# エージェント設定ファイル config.yaml を /etc/flightctl/ にコピーします。
+# これにより、サービス起動時のファイル不足エラーが解消されます。
+# 必須: ビルドディレクトリに 'config.yaml' が存在すること。
+ADD config.yaml /etc/flightctl/
+
+# --- 2. パッケージのインストールとサービス設定 ---
+
+# DNFを使用して必要なパッケージをインストールします。nginxを追加
+RUN dnf install -y \
+    NetworkManager \
+    openssh-server \
+    flightctl-agent \
+    nginx && \
+    dnf clean all
+
+# --- 3. ユーザーとシステムのカスタマイズ ---
+[root@jump01 rhel9.5-imagemode]# cat Containerfile 
+FROM registry.redhat.io/rhel9/rhel-bootc:latest
+
+# --- 1. リポジトリ設定ファイルとエージェント設定ファイルの追加 ---
+
+# 特定されたファイル名 'redhat.repo' を /etc/yum.repos.d/ にコピーします。
+ADD redhat.repo /etc/yum.repos.d/
+
+# エージェント設定ファイル config.yaml を /etc/flightctl/ にコピーします。
+# これにより、サービス起動時のファイル不足エラーが解消されます。
+# 必須: ビルドディレクトリに 'config.yaml' が存在すること。
+ADD config.yaml /etc/flightctl/
+
+# --- 2. パッケージのインストールとサービス設定 ---
+
+# DNFを使用して必要なパッケージをインストールします。nginxを追加
+RUN dnf install -y \
+    NetworkManager \
+    openssh-server \
+    flightctl-agent \
+    nginx && \
+    dnf clean all
+
+# --- 3. ユーザーとシステムのカスタマイズ ---
+
+# デモユーザーの作成、パスワード設定 (redhat)、sudo設定、ホスト名設定
+RUN useradd demo && echo "demo:redhat" | chpasswd && \
+    usermod -aG wheel demo && \
+    echo "%wheel ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
+    echo "bootc-demo-v1" > /etc/hostname
+
+# --- 4. サービス設定と bootc の制御 ---
+
+# サービスを有効化: sshd, flightctl-agent, および nginx
+RUN systemctl enable sshd && \
+    systemctl enable flightctl-agent.service && \
+    systemctl enable nginx.service
+
+# bootc の自動更新タイマーをマスク（無効化）。
+RUN systemctl mask bootc-fetch-apply-updates.timer
+
+# --- 5. メタデータと最終チェック ---
+
+# bootc の要件に準拠していることを確認するためのリンティング
+RUN bootc container lint
+
+# イメージメタデータ
+LABEL bootc-image="true"
+LABEL org.opencontainers.image.title="custom-rhel9-rhem-bootc"
+LABEL org.opencontainers.image.version="1.0.0"
+
+# コンテナが公開するポートを宣言 (Nginxのデフォルトポート)
+EXPOSE 80
+
+# systemd をデフォルトのエントリポイントに設定
+CMD ["/usr/lib/systemd/systemd"]
