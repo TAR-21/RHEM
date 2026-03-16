@@ -44,23 +44,7 @@ oc rollout restart deployment -l flightctl.service
 
 ---
 
-### 3. UI External Access (Route Creation)
-
-**[Issue]**
-The Helm chart created a `ClusterIP` Service for the UI, but no `Route` was created for external access.
-**[Fix]**
-Exposed the service to generate a public URL for access via browser.
-
-```bash
-oc expose svc flightctl-ui -n default
-
-```
-
-*Note: It is recommended to add a `Route` or `Ingress` object definition to the Helm chart.*
-
----
-
-### 4. Enabling OpenShift Console Plugin
+### 3. Enabling OpenShift Console Plugin
 
 **[Issue]**
 The `ConsolePlugin` resource was deployed by Helm, but the "Edge Management" menu did not appear in the OpenShift Web Console.
