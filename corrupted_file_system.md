@@ -1,4 +1,3 @@
-````md
 # Summary of the Troubleshooting and Recovery Procedure
 
 ## 1. Issue Overview
@@ -15,9 +14,9 @@ The sudden power loss interrupted the container image download and extraction pr
 
 Specifically, the symbolic link structure (OverlayFS index metadata) became inconsistent, causing the following persistent error:
 
-```bash
+```bash id="j3wq2e"
 readlink /var/lib/containers/storage/overlay/l: invalid argument
-````
+```
 
 Standard cleanup operations such as `podman system prune` were insufficient because they could not remove the corrupted OverlayFS metadata itself.
 
@@ -35,21 +34,21 @@ If a similar issue occurs due to a power outage or unexpected shutdown during an
 
 ---
 
-### Step 1. Stop the Flightctl Agent
+## Step 1. Stop the Flightctl Agent
 
 First, stop the Flightctl Agent to prevent further writes to the corrupted container storage.
 
-```bash
+```bash id="i1k2la"
 sudo systemctl stop flightctl-agent
 ```
 
 ---
 
-### Step 2. Fully Reset the Podman Storage
+## Step 2. Fully Reset the Podman Storage
 
 Completely reset the local container storage, including all OverlayFS metadata.
 
-```bash
+```bash id="q4m7vb"
 sudo podman system reset
 ```
 
@@ -59,11 +58,11 @@ This operation fully clears `/var/lib/containers/storage` and removes the corrup
 
 ---
 
-### Step 3. Restart the Flightctl Agent
+## Step 3. Restart the Flightctl Agent
 
 After the storage has been cleaned, restart the Flightctl Agent.
 
-```bash
+```bash id="v7p9cx"
 sudo systemctl start flightctl-agent
 ```
 
@@ -71,11 +70,11 @@ The agent will begin downloading and processing the container image again from t
 
 ---
 
-### Step 4. Monitor the Recovery Progress
+## Step 4. Monitor the Recovery Progress
 
 Monitor the agent logs to confirm that the image pull operation proceeds normally.
 
-```bash
+```bash id="a8r2mn"
 sudo journalctl -u flightctl-agent -f
 ```
 
@@ -95,6 +94,3 @@ For Edge environments, it is important to design systems with resilience against
 * Health monitoring of OverlayFS/container storage
 * Automatic recovery handling for prefetch failures
 * Fault-tolerant update strategies combined with bootc rollback functionality
-
-```
-```
