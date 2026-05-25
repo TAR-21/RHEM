@@ -1,56 +1,100 @@
-Summary of the Troubleshooting and Recovery Procedure
-1. Issue Overview
+````md
+# Summary of the Troubleshooting and Recovery Procedure
+
+## 1. Issue Overview
 
 An unexpected power outage (forced shutdown) occurred while an OS/container update was in progress on a Flightctl-managed Edge device running a bootc-based RHEL 10 environment.
 
-After the device powered back on, the update process became stuck with a prefetch failed error and could no longer proceed.
+After the device powered back on, the update process became stuck with a `prefetch failed` error and could no longer proceed.
 
-2. Root Cause
+---
+
+## 2. Root Cause
 
 The sudden power loss interrupted the container image download and extraction process, resulting in logical corruption within the Podman/OverlayFS container storage.
 
 Specifically, the symbolic link structure (OverlayFS index metadata) became inconsistent, causing the following persistent error:
 
+```bash
 readlink /var/lib/containers/storage/overlay/l: invalid argument
+````
 
-Standard cleanup operations such as podman system prune were insufficient because they could not remove the corrupted OverlayFS metadata itself.
+Standard cleanup operations such as `podman system prune` were insufficient because they could not remove the corrupted OverlayFS metadata itself.
 
 As a result:
 
-Image download attempts repeatedly failed at the same point
-Flightctl continuously retried the prefetch operation
-The update workflow remained permanently stuck
-3. Established Recovery Procedure
+* Image download attempts repeatedly failed at the same point
+* Flightctl continuously retried the prefetch operation
+* The update workflow remained permanently stuck
+
+---
+
+## 3. Established Recovery Procedure
 
 If a similar issue occurs due to a power outage or unexpected shutdown during an update, the device can be safely recovered using the following procedure.
 
-Step 1. Stop the Flightctl Agent
+---
+
+### Step 1. Stop the Flightctl Agent
 
 First, stop the Flightctl Agent to prevent further writes to the corrupted container storage.
 
+```bash
 sudo systemctl stop flightctl-agent
-Step 2. Fully Reset the Podman Storage
+```
+
+---
+
+### Step 2. Fully Reset the Podman Storage
 
 Completely reset the local container storage, including all OverlayFS metadata.
 
+```bash
 sudo podman system reset
+```
 
-If prompted for confirmation, enter y to continue.
+If prompted for confirmation, enter `y` to continue.
 
-This operation fully clears /var/lib/containers/storage and removes the corrupted OverlayFS structures.
+This operation fully clears `/var/lib/containers/storage` and removes the corrupted OverlayFS structures.
 
-Step 3. Restart the Flightctl Agent
+---
+
+### Step 3. Restart the Flightctl Agent
 
 After the storage has been cleaned, restart the Flightctl Agent.
 
+```bash
 sudo systemctl start flightctl-agent
+```
 
 The agent will begin downloading and processing the container image again from the beginning.
 
-Step 4. Monitor the Recovery Progress
+---
+
+### Step 4. Monitor the Recovery Progress
 
 Monitor the agent logs to confirm that the image pull operation proceeds normally.
 
+```bash
 sudo journalctl -u flightctl-agent -f
+```
 
-Verify that the Pulling image... process continues without repeating the previous error.
+Verify that the `Pulling image...` process continues without repeating the previous error.
+
+---
+
+## 4. Additional Notes
+
+This issue was caused by OverlayFS metadata corruption triggered by an unexpected power interruption during the update process.
+
+In this scenario, standard cleanup commands such as `podman system prune` are not sufficient because they do not remove damaged OverlayFS metadata structures. A full `podman system reset` is required to restore the container storage to a clean state.
+
+For Edge environments, it is important to design systems with resilience against power loss, communication interruptions, and forced reboots. Recommended countermeasures include:
+
+* Power protection during updates (UPS, battery backup, etc.)
+* Health monitoring of OverlayFS/container storage
+* Automatic recovery handling for prefetch failures
+* Fault-tolerant update strategies combined with bootc rollback functionality
+
+```
+```
