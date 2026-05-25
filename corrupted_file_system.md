@@ -79,18 +79,3 @@ sudo journalctl -u flightctl-agent -f
 ```
 
 Verify that the `Pulling image...` process continues without repeating the previous error.
-
----
-
-## 4. Additional Notes
-
-This issue was caused by OverlayFS metadata corruption triggered by an unexpected power interruption during the update process.
-
-In this scenario, standard cleanup commands such as `podman system prune` are not sufficient because they do not remove damaged OverlayFS metadata structures. A full `podman system reset` is required to restore the container storage to a clean state.
-
-For Edge environments, it is important to design systems with resilience against power loss, communication interruptions, and forced reboots. Recommended countermeasures include:
-
-* Power protection during updates (UPS, battery backup, etc.)
-* Health monitoring of OverlayFS/container storage
-* Automatic recovery handling for prefetch failures
-* Fault-tolerant update strategies combined with bootc rollback functionality
