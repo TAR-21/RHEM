@@ -269,24 +269,3 @@ Copying the authentication file to:
 ```
 
 resolved the issue and allowed the upgrade to proceed successfully.
-
----
-
-## Potential Product Issue
-
-This behavior may indicate a bug or design issue in the FlightCtl 1.2.0 upgrade validation logic.
-
-Specifically:
-
-* `podman login` succeeds
-* `podman pull` succeeds
-* `podman manifest inspect` fails during RPM pre-install validation
-* The RPM upgrade aborts despite valid registry credentials
-
-The validation logic may not correctly handle authentication credentials stored only under:
-
-```text
-/run/user/<uid>/containers/auth.json
-```
-
-and may require support for alternate Podman credential locations.
