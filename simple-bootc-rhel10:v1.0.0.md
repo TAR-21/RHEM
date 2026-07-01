@@ -186,23 +186,6 @@ The installed operating system includes:
 - Red Hat Edge Manager Agent (`flightctl-agent`)
 - `/etc/flightctl/config.yaml`
 
----
-
-# Step 11. Verify the Agent
-
-Verify that the Flight Control Agent is running.
-
-```bash
-systemctl status flightctl-agent
-```
-
-Monitor the agent logs.
-
-```bash
-journalctl -u flightctl-agent -f
-```
-
-If the enrollment configuration is valid, the system will automatically register with the Red Hat Edge Manager server.
 
 ---
 
