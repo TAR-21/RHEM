@@ -105,12 +105,6 @@ sudo podman build \
 sudo podman push ${OCI_IMAGE_REPO}:${VERSION}
 ```
 
-Verify that the image has been uploaded successfully.
-
-```bash
-skopeo inspect docker://${OCI_IMAGE_REPO}:${VERSION}
-```
-
 ---
 
 # Step 6. Pull the bootc-image-builder Image
