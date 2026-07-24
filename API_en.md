@@ -1,10 +1,10 @@
-## 🛠️ FlightCTL API Integration Guide
+# 🛠️ FlightCTL API Integration Guide
 
 This guide summarizes how to integrate and consume the FlightCTL API from external web applications using the OpenAPI 3.0 specification.
 
 ---
 
-### 1️⃣ OpenAPI Spec & Client Code Generation
+## 1️⃣ OpenAPI Spec & Client Code Generation
 
 FlightCTL provides an OpenAPI 3.0 specification file in its official repository. You can use it to auto-generate type-safe client SDKs for various programming languages and frameworks.
 
@@ -28,31 +28,29 @@ openapi-generator generate \
   -i openapi.yaml \
   -g go \
   -o ./flightctl-client-go
-
 ```
 
 ---
 
-### 2️⃣ Authentication Flow (JWT Bearer Token)
+## 2️⃣ Authentication Flow (JWT Bearer Token)
 
-FlightCTL’s User-facing API uses **JWT Bearer Tokens** for authentication.
+FlightCTL's User-facing API uses **JWT Bearer Tokens** for authentication.
 
 ```
 [1. Fetch Config]   GET /api/v1/auth/config  ──► Retrieve OIDC provider settings
 [2. Obtain Token]   OAuth2 / OIDC Auth Flow  ──► Get JWT Access Token
-[3. Exchange Token] POST /api/v1/auth/{provider}/token ──► (Optional) Exchange for FlightCTL Token
-
+[3. Exchange Token] POST /api/v1/auth/{providername}/token ──► (Optional) Exchange for FlightCTL Token
 ```
 
-#### Supported Authentication Backends
+### Supported Authentication Backends
 
-* **OIDC (OpenID Connect)**: Compatible with any standard OIDC provider (**Recommended**)
-* **OAuth2**: For non-OIDC OAuth2 providers
-* **OpenShift OAuth**: Integrates directly with OpenShift OAuth server
-* **AAP**: Via Ansible Automation Platform Gateway API
-* **Kubernetes**: TokenReview verification for ServiceAccount tokens
+- **OIDC (OpenID Connect)**: Compatible with any standard OIDC provider (**Recommended**)
+- **OAuth2**: For non-OIDC OAuth2 providers
+- **OpenShift OAuth**: Integrates directly with OpenShift OAuth server
+- **AAP**: Via Ansible Automation Platform Gateway API
+- **Kubernetes**: TokenReview verification for ServiceAccount tokens
 
-#### Web Application Example (OIDC Authorization Code Flow)
+### Web Application Example (OIDC Authorization Code Flow)
 
 ```javascript
 // 1. Redirect user to the OIDC provider's login page
@@ -78,50 +76,55 @@ const tokenResponse = await fetch(`${oidcIssuerUrl}/token`, {
 });
 
 const { access_token } = await tokenResponse.json();
-
 ```
 
 ---
 
-### 3️⃣ Key REST Endpoints Overview
+## 3️⃣ Key REST Endpoints Overview
 
-* **Base URL:** `/api/v1`
+- **Base URL:** `/api/v1`
 
 | Category | Description | Endpoint | HTTP Method |
-| --- | --- | --- | --- |
+|----------|-------------|----------|-------------|
 | **Auth** | Get Auth Config | `/auth/config` | `GET` |
-|  | Validate Token | `/auth/validate` | `GET` |
-|  | Get Permissions | `/auth/permissions` | `GET` |
-|  | Exchange Token | `/auth/{providername}/token` | `POST` |
-|  | User Info | `/auth/userinfo` | `GET` |
+| | Validate Token | `/auth/validate` | `GET` |
+| | Get Permissions | `/auth/permissions` | `GET` |
+| | Exchange Token | `/auth/{providername}/token` | `POST` |
+| | User Info | `/auth/userinfo` | `GET` |
 | **Devices** | List Devices | `/devices` | `GET` |
-|  | Create Device | `/devices` | `POST` |
-|  | Get / Update / Delete | `/devices/{name}` | `GET` / `PUT` / `DELETE` |
-|  | Status Update | `/devices/{name}/status` | `GET` / `PUT` |
-|  | Decommission Device | `/devices/{name}/decommission` | `POST` |
-|  | Get Rendered Spec | `/devices/{name}/rendered` | `GET` |
-|  | Application Actions | `/devices/{name}/applications/{app}/actions/*` | `POST` |
-|  | Terminal Console | `/ws/v1/devices/{name}/console` | `WebSocket` |
+| | Create Device | `/devices` | `POST` |
+| | Get / Update / Patch / Delete | `/devices/{name}` | `GET` / `PUT` / `PATCH` / `DELETE` |
+| | Status | `/devices/{name}/status` | `GET` / `PUT` / `PATCH` |
+| | Decommission Device | `/devices/{name}/decommission` | `PUT` |
+| | Get Rendered Spec | `/devices/{name}/rendered` | `GET` |
+| | Stop Application | `/devices/{name}/applications/{appname}/actions/stop` | `POST` |
+| | Start Application | `/devices/{name}/applications/{appname}/actions/start` | `POST` |
+| | Restart Application | `/devices/{name}/applications/{appname}/actions/restart` | `POST` |
+| | Terminal Console | `/ws/v1/devices/{name}/console` | `WebSocket` |
 | **Fleets** | List / Create | `/fleets` | `GET` / `POST` |
-|  | Get / Update / Delete | `/fleets/{name}` | `GET` / `PUT` / `DELETE` |
-|  | Fleet Status | `/fleets/{name}/status` | `GET` / `PUT` |
-|  | Template Versions | `/fleets/{fleet}/templateversions` | `GET` |
-|  | Template Version Details | `/fleets/{fleet}/templateversions/{name}` | `GET` / `DELETE` |
-| **Enrollment** | List / Get Request | `/enrollmentrequests` / `{name}` | `GET` |
-|  | Approve Request | `/enrollmentrequests/{name}/approval` | `POST` |
+| | Get / Update / Delete | `/fleets/{name}` | `GET` / `PUT` / `DELETE` |
+| | Fleet Status | `/fleets/{name}/status` | `GET` / `PUT` |
+| | Template Versions | `/fleets/{fleet}/templateversions` | `GET` |
+| | Template Version Details | `/fleets/{fleet}/templateversions/{name}` | `GET` / `DELETE` |
+| **Enrollment** | List Requests | `/enrollmentrequests` | `GET` |
+| | Get / Patch Request | `/enrollmentrequests/{name}` | `GET` / `PATCH` |
+| | Enrollment Status | `/enrollmentrequests/{name}/status` | `PATCH` |
+| | Approve Request | `/enrollmentrequests/{name}/approval` | `PUT` |
+| **CSR** | List / Create | `/certificatesigningrequests` | `GET` / `POST` |
+| | Patch CSR | `/certificatesigningrequests/{name}` | `PATCH` |
 | **Repositories** | List / Create | `/repositories` | `GET` / `POST` |
-|  | Get / Update / Delete | `/repositories/{name}` | `GET` / `PUT` / `DELETE` |
+| | Get / Update / Patch / Delete | `/repositories/{name}` | `GET` / `PUT` / `PATCH` / `DELETE` |
 | **Resource Syncs** | List / Create | `/resourcesyncs` | `GET` / `POST` |
-|  | Get / Update / Delete | `/resourcesyncs/{name}` | `GET` / `PUT` / `DELETE` |
+| | Get / Update / Patch / Delete | `/resourcesyncs/{name}` | `GET` / `PUT` / `PATCH` / `DELETE` |
 | **Misc** | Events / Labels / Orgs | `/events`, `/labels`, `/organizations` | `GET` |
-|  | Auth Providers | `/authproviders` | `GET` / `POST` |
-|  | API Version | `/version` | `GET` |
+| | Auth Providers | `/authproviders` | `GET` / `POST` |
+| | API Version | `/version` | `GET` |
 
 ---
 
-### 4️⃣ Code Examples
+## 4️⃣ Code Examples
 
-#### JavaScript (Fetch API)
+### JavaScript (Fetch API)
 
 ```javascript
 const FLIGHTCTL_API = 'https://your-rhem-api-server/api/v1';
@@ -159,16 +162,15 @@ async function updateDevice(name, deviceSpec) {
 // Approve enrollment request
 async function approveEnrollment(name, labels) {
   const res = await fetch(`${FLIGHTCTL_API}/enrollmentrequests/${name}/approval`, {
-    method: 'POST',
+    method: 'PUT',
     headers,
     body: JSON.stringify({ approved: true, labels }),
   });
   return res.json();
 }
-
 ```
 
-#### Python (requests)
+### Python (requests)
 
 ```python
 import requests
@@ -201,27 +203,27 @@ fleet_payload = {
 
 response = session.post(f"{API_BASE}/fleets", json=fleet_payload)
 print(response.json())
-
 ```
 
 ---
 
-### 5️⃣ API Version Negotiation
+## 5️⃣ API Version Negotiation
 
 FlightCTL uses **header-based version negotiation**. The URL path remains unchanged (`/api/v1`).
 
-* **Request Header:** `Flightctl-API-Version: v1beta1`
-* **If Header is Omitted:** The API server defaults to the most stable supported version.
-* **If Unsupported Version Requested:** Returns `406 Not Acceptable`, listing valid versions in the `Flightctl-API-Versions-Supported` response header.
+- **Request Header:** `Flightctl-API-Version: v1beta1`
+- **Response Headers:** `Flightctl-API-Version` (version used), `Deprecation` (RFC 9651/9745 format), `Vary: Flightctl-API-Version`
+- **If Header is Omitted:** The API server defaults to the most stable supported version.
+- **If Unsupported Version Requested:** Returns `406 Not Acceptable`.
 
 | Version | Status | Target Resources |
-| --- | --- | --- |
-| `v1beta1` | Stable (Guaranteed 1.x compatibility) | Device, Fleet, Repository, etc. |
-| `v1alpha1` | Experimental (Subject to change) | ImageBuild, ImageExport |
+|---------|--------|------------------|
+| `v1beta1` | Stable | Device, Fleet, Repository, EnrollmentRequest, TemplateVersion, ResourceSync, CertificateSigningRequest, Event, AuthProvider, AuthConfig, Organization |
+| `v1alpha1` | Alpha (Subject to change) | ImageBuild, ImageExport |
 
 ---
 
-### 6️⃣ Optimistic Concurrency Control
+## 6️⃣ Optimistic Concurrency Control
 
 To prevent concurrent write conflicts, FlightCTL utilizes the `resourceVersion` field.
 
@@ -243,12 +245,11 @@ const res = await fetch(`${FLIGHTCTL_API}/devices/my-device`, {
 if (res.status === 409) {
   console.warn('Conflict detected. Refetching latest version...');
 }
-
 ```
 
 ---
 
-### 7️⃣ Architecture & Security Best Practices
+## 7️⃣ Architecture & Security Best Practices
 
 ```
 ┌──────────────────────────────────────┐
@@ -266,20 +267,18 @@ if (res.status === 409) {
 ┌──────────────────────────────────────┐
 │  FlightCTL API Server                │
 └──────────────────────────────────────┘
-
 ```
 
 > ⚠️ **Security Checklist:**
-> * **Use BFF Pattern:** Avoid calling the FlightCTL API directly from the browser. Store `client_secret` and manage access tokens securely in a backend service (BFF).
-> * **CORS Configuration:** If direct browser calls are unavoidable, ensure CORS headers are properly configured on the FlightCTL API server or gateway.
-> 
-> 
+>
+> - **Use BFF Pattern:** Avoid calling the FlightCTL API directly from the browser. Store `client_secret` and manage access tokens securely in a backend service (BFF).
+> - **CORS Configuration:** If direct browser calls are unavoidable, ensure CORS headers are properly configured on the FlightCTL API server or gateway.
 
 ---
 
-### 8️⃣ Reference Links
+## 8️⃣ Reference Links
 
-* 📘 [OpenAPI Spec (v1beta1)](https://github.com/flightctl/flightctl/blob/main/api/core/v1beta1/openapi.yaml)
-* 📘 [OpenAPI Spec (v1alpha1)](https://github.com/flightctl/flightctl/tree/main/api/core/v1alpha1)
-* 📑 [API Resource Reference](https://github.com/flightctl/flightctl/blob/main/docs/user/references/api-resources.md)
-* 🎨 [FlightCTL UI Repository](https://github.com/flightctl/flightctl-ui) — Official React UI implementation serving as a real-world integration example
+- 📘 [OpenAPI Spec (v1beta1)](https://github.com/flightctl/flightctl/blob/main/api/core/v1beta1/openapi.yaml)
+- 📘 [OpenAPI Spec (v1alpha1)](https://github.com/flightctl/flightctl/tree/main/api/core/v1alpha1)
+- 📑 [API Resource Reference](https://github.com/flightctl/flightctl/blob/main/docs/user/references/api-resources.md)
+- 🎨 [FlightCTL UI Repository](https://github.com/flightctl/flightctl-ui) — Official React UI implementation serving as a real-world integration example
