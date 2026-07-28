@@ -6,6 +6,8 @@
 
 ---
 
+> 本ドキュメント内の `<RHEM_HOST>` は Red Hat Edge Manager のホスト名に置き換えてください（例: `rhem01.example.com`）。
+
 ## ワークフロー概要
 
 ```
@@ -76,7 +78,7 @@ import rhem_client
 
 urllib3.disable_warnings()
 
-OIDC_TOKEN_URL = "https://rhem01/_/pam-issuer/api/v1/auth/token"
+OIDC_TOKEN_URL = "https://<RHEM_HOST>/_/pam-issuer/api/v1/auth/token"
 OIDC_CLIENT_ID = "flightctl-client"
 
 
@@ -105,7 +107,7 @@ def get_access_token(username: str, password: str) -> str:
 def get_api_client() -> rhem_client.ApiClient:
     """設定済みの API クライアントを生成して返す"""
     config = rhem_client.Configuration(
-        host="https://rhem01/api/v1",
+        host="https://<RHEM_HOST>/api/v1",
     )
 
     # 自己署名証明書を使用する場合は SSL 検証を無効化
@@ -359,7 +361,7 @@ API クライアントのリソースを適切に管理するために、コン�
 ```python
 import rhem_client
 
-config = rhem_client.Configuration(host="https://rhem01/api/v1")
+config = rhem_client.Configuration(host="https://<RHEM_HOST>/api/v1")
 
 with rhem_client.ApiClient(config) as client:
     device_api = rhem_client.DeviceApi(client)
@@ -399,7 +401,7 @@ rhem_client/
 
 ```python
 config = rhem_client.Configuration(
-    host="https://rhem01/api/v1",
+    host="https://<RHEM_HOST>/api/v1",
 )
 config.verify_ssl = False  # 開発環境のみ。本番では適切な証明書を使用すること
 ```
@@ -408,7 +410,7 @@ config.verify_ssl = False  # 開発環境のみ。本番では適切な証明書
 
 ```python
 config = rhem_client.Configuration(
-    host="https://rhem01/api/v1",
+    host="https://<RHEM_HOST>/api/v1",
 )
 config.proxy = "http://proxy.example.com:8080"
 ```
@@ -424,10 +426,10 @@ OIDC 設定は以下で確認できます：
 
 ```bash
 # 認証プロバイダーの確認
-curl -k https://rhem01/api/v1/auth/config
+curl -k https://<RHEM_HOST>/api/v1/auth/config
 
 # OIDC well-known 設定の確認
-curl -k https://rhem01/_/pam-issuer/api/v1/auth/.well-known/openid-configuration
+curl -k https://<RHEM_HOST>/_/pam-issuer/api/v1/auth/.well-known/openid-configuration
 ```
 
 ### `ApplicationProviderSpec` の oneOf デシリアライズエラー
@@ -515,5 +517,3 @@ npx @openapitools/openapi-generator-cli generate \
 cd rhem_client
 pip install .
 ```
-
-> **注意**: 再生成すると `NUMBER_` プレフィックスのバグが再発する可能性があります。再生成後は `grep -rn 'NUMBER_' rhem_client/rhem_client/models/` で確認してください。
