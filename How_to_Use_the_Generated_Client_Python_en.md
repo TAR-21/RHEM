@@ -16,7 +16,13 @@ Below is a step-by-step guide using the Python (`python`) generator.
 
 ## Step 1: Generate the Client Code
 
-Run the generator CLI to output the client source code into your project directory.
+First, prepare the OpenAPI spec file. If you don't have `openapi.yaml` locally, you can download it from the official repository:
+
+```bash
+curl -o openapi.yaml https://raw.githubusercontent.com/flightctl/flightctl/main/api/core/v1beta1/openapi.yaml
+```
+
+Then, run the generator CLI to output the client source code into your project directory.
 
 ```bash
 # Generate the client into the rhem_client directory
