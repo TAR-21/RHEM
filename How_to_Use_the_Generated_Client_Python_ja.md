@@ -16,7 +16,13 @@
 
 ## ステップ 1: クライアントコードの生成
 
-まず、ジェネレーター CLI を実行して、プロジェクトディレクトリ内にクライアントのソースコードを出力します。
+まず、OpenAPI スペックファイルを用意します。ローカルに `openapi.yaml` がない場合は、公式リポジトリから取得できます：
+
+```bash
+curl -o openapi.yaml https://raw.githubusercontent.com/flightctl/flightctl/main/api/core/v1beta1/openapi.yaml
+```
+
+次に、ジェネレーター CLI を実行して、プロジェクトディレクトリ内にクライアントのソースコードを出力します。
 
 ```bash
 # rhem_client ディレクトリにクライアントを生成
