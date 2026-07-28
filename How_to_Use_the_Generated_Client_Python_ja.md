@@ -24,10 +24,29 @@ npx @openapitools/openapi-generator-cli generate \
   -i openapi.yaml \
   -g python \
   -o ./rhem_client \
-  --additional-properties=packageName=rhem_client
+  --additional-properties=packageName=rhem_client \
+  --skip-validate-spec
 ```
 
-これにより、`./rhem_client` 内に API クラス（`DeviceApi`、`FleetApi` など）と Python の型定義（モデル）が作成されます。
+> **注意**: `--skip-validate-spec` は、OpenAPI スペックにバリデーションエラー（例: `requestBody` の型不一致）がある場合に必要です。スペックを修正できる場合は、このオプションなしで実行することを推奨します。
+
+これにより、`./rhem_client` 内に以下の API クラスと Python の型定義（モデル）が作成されます：
+
+| API クラス | 主な用途 |
+| --- | --- |
+| `AuthenticationApi` | 認証設定・トークン・権限の取得 |
+| `AuthproviderApi` | 認証プロバイダーの CRUD |
+| `CertificatesigningrequestApi` | 証明書署名リクエストの管理 |
+| `DeviceApi` | デバイスの CRUD・ステータス管理・アプリ操作 |
+| `DeviceactionsApi` | デバイスの一括アクション（レジューム等） |
+| `EnrollmentrequestApi` | デバイス登録リクエストの管理 |
+| `EventApi` | イベントの一覧取得 |
+| `FleetApi` | フリートの CRUD・テンプレートバージョン管理 |
+| `LabelApi` | ラベルの一覧取得 |
+| `OrganizationApi` | 組織の一覧取得 |
+| `RepositoryApi` | リポジトリの CRUD・OCI イメージチェック |
+| `ResourcesyncApi` | リソース同期の CRUD |
+| `VersionApi` | API バージョン情報の取得 |
 
 生成後、クライアントをインストールします：
 
@@ -106,7 +125,7 @@ def fetch_devices(site: str = "factory-a") -> list[Device]:
         return response.items or []
 
     except rhem_client.ApiException as e:
-        print(f"デバイスの取得に失敗しました: {e}")
+        print(f"デバイスの取得に失敗しました: {e.status} {e.reason}")
         return []
 
 
@@ -157,7 +176,45 @@ def update_device_image(device_name: str, new_image: str):
         print(f"更新に成功しました: {updated_device.metadata.name}")
 
     except rhem_client.ApiException as e:
-        print(f"更新に失敗しました: {e}")
+        print(f"更新に失敗しました: {e.status} {e.reason}")
+```
+
+### データの削除（DELETE）
+
+```python
+# app/device_delete.py
+from api.flightctl_client import device_api
+import rhem_client
+
+
+def delete_device(device_name: str):
+    """デバイスを削除する"""
+    try:
+        device_api.delete_device(name=device_name)
+        print(f"デバイス '{device_name}' を削除しました")
+
+    except rhem_client.ApiException as e:
+        print(f"削除に失敗しました: {e.status} {e.reason}")
+```
+
+### フリート管理の例
+
+```python
+# app/fleet_management.py
+from api.flightctl_client import fleet_api
+import rhem_client
+
+
+def list_fleets():
+    """フリート一覧を取得する"""
+    try:
+        response = fleet_api.list_fleets()
+        for fleet in (response.items or []):
+            name = fleet.metadata.name if fleet.metadata else "不明"
+            print(f"  フリート: {name}")
+
+    except rhem_client.ApiException as e:
+        print(f"フリート取得に失敗しました: {e.status} {e.reason}")
 ```
 
 ---
@@ -280,4 +337,65 @@ with rhem_client.ApiClient(config) as client:
     devices = device_api.list_devices()
     print(devices)
 # クライアントが自動的にクローズされる
+```
+
+---
+
+## 生成されたディレクトリ構成
+
+```
+rhem_client/
+├── rhem_client/          # Python パッケージ本体
+│   ├── __init__.py       # 全 API クラス・モデルのエクスポート
+│   ├── api_client.py     # HTTP 通信の基盤クラス
+│   ├── configuration.py  # 接続設定（ホスト、認証、プロキシ等）
+│   ├── exceptions.py     # ApiException 等の例外クラス
+│   ├── rest.py           # REST クライアント（urllib3 ベース）
+│   ├── api/              # API クラス（エンドポイントごと）
+│   └── models/           # データモデル（リクエスト・レスポンスの型）
+├── docs/                 # API ドキュメント（Markdown）
+├── test/                 # テストコード
+├── pyproject.toml        # パッケージ設定
+├── setup.py              # セットアップスクリプト
+└── requirements.txt      # 依存パッケージ
+```
+
+---
+
+## トラブルシューティング
+
+### SSL 証明書エラー
+
+自己署名証明書を使用している場合：
+
+```python
+config = rhem_client.Configuration(
+    host="https://your-rhem-api-server/api/v1",
+)
+config.verify_ssl = False  # 開発環境のみ。本番では適切な証明書を使用すること
+```
+
+### プロキシ設定
+
+```python
+config = rhem_client.Configuration(
+    host="https://your-rhem-api-server/api/v1",
+)
+config.proxy = "http://proxy.example.com:8080"
+```
+
+### クライアントの再生成
+
+API 仕様（`openapi.yaml`）が更新された場合、クライアントを再生成して再インストールします：
+
+```bash
+npx @openapitools/openapi-generator-cli generate \
+  -i openapi.yaml \
+  -g python \
+  -o ./rhem_client \
+  --additional-properties=packageName=rhem_client \
+  --skip-validate-spec
+
+cd rhem_client
+pip install .
 ```
