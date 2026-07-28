@@ -6,6 +6,8 @@ Below is a step-by-step guide using the Python (`python`) generator.
 
 ---
 
+> Replace `<RHEM_HOST>` throughout this document with your Red Hat Edge Manager hostname (e.g., `rhem01.example.com`).
+
 ## Workflow Overview
 
 ```
@@ -76,7 +78,7 @@ import rhem_client
 
 urllib3.disable_warnings()
 
-OIDC_TOKEN_URL = "https://rhem01/_/pam-issuer/api/v1/auth/token"
+OIDC_TOKEN_URL = "https://<RHEM_HOST>/_/pam-issuer/api/v1/auth/token"
 OIDC_CLIENT_ID = "flightctl-client"
 
 
@@ -105,7 +107,7 @@ def get_access_token(username: str, password: str) -> str:
 def get_api_client() -> rhem_client.ApiClient:
     """Create and return a configured API client"""
     config = rhem_client.Configuration(
-        host="https://rhem01/api/v1",
+        host="https://<RHEM_HOST>/api/v1",
     )
 
     # Disable SSL verification for self-signed certificates
@@ -359,7 +361,7 @@ Use context managers to properly manage API client resources:
 ```python
 import rhem_client
 
-config = rhem_client.Configuration(host="https://rhem01/api/v1")
+config = rhem_client.Configuration(host="https://<RHEM_HOST>/api/v1")
 
 with rhem_client.ApiClient(config) as client:
     device_api = rhem_client.DeviceApi(client)
@@ -399,7 +401,7 @@ When using self-signed certificates:
 
 ```python
 config = rhem_client.Configuration(
-    host="https://rhem01/api/v1",
+    host="https://<RHEM_HOST>/api/v1",
 )
 config.verify_ssl = False  # Development only. Use proper certificates in production.
 ```
@@ -408,7 +410,7 @@ config.verify_ssl = False  # Development only. Use proper certificates in produc
 
 ```python
 config = rhem_client.Configuration(
-    host="https://rhem01/api/v1",
+    host="https://<RHEM_HOST>/api/v1",
 )
 config.proxy = "http://proxy.example.com:8080"
 ```
@@ -424,10 +426,10 @@ You can check the OIDC configuration with:
 
 ```bash
 # Check authentication provider
-curl -k https://rhem01/api/v1/auth/config
+curl -k https://<RHEM_HOST>/api/v1/auth/config
 
 # Check OIDC well-known configuration
-curl -k https://rhem01/_/pam-issuer/api/v1/auth/.well-known/openid-configuration
+curl -k https://<RHEM_HOST>/_/pam-issuer/api/v1/auth/.well-known/openid-configuration
 ```
 
 ### `ApplicationProviderSpec` oneOf Deserialization Error
