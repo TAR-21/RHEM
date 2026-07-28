@@ -63,37 +63,54 @@ pip install .
 
 ```python
 # api/flightctl_client.py
+import urllib3
+import urllib.parse
+import json
 import rhem_client
+
+urllib3.disable_warnings()
+
+OIDC_TOKEN_URL = "https://rhem01/_/pam-issuer/api/v1/auth/token"
+OIDC_CLIENT_ID = "flightctl-client"
+
+
+def get_access_token(username: str, password: str) -> str:
+    """OIDC パスワードグラントで Bearer トークンを取得する"""
+    http = urllib3.PoolManager(cert_reqs="CERT_NONE")
+    body = urllib.parse.urlencode({
+        "grant_type": "password",
+        "client_id": OIDC_CLIENT_ID,
+        "username": username,
+        "password": password,
+        "scope": "openid profile email roles offline_access",
+    })
+    r = http.request(
+        "POST",
+        OIDC_TOKEN_URL,
+        body=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    data = json.loads(r.data)
+    if r.status != 200:
+        raise RuntimeError(f"トークン取得に失敗: {data}")
+    return data["access_token"]
+
 
 def get_api_client() -> rhem_client.ApiClient:
     """設定済みの API クライアントを生成して返す"""
-
-    # 1. 設定オブジェクトを作成
     config = rhem_client.Configuration(
-        # API のベース URL
         host="https://rhem01/api/v1",
     )
 
     # 自己署名証明書を使用する場合は SSL 検証を無効化
     config.verify_ssl = False
 
-    # 動的な Bearer トークンを設定
-    config.access_token = get_jwt_token()
-
-    # 2. API クライアントをインスタンス化
+    # OIDC トークンを取得して Authorization ヘッダーに設定
+    token = get_access_token("kikyou", "redhat")
     client = rhem_client.ApiClient(config)
-
-    # カスタムヘッダー（API バージョンの指定など）
-    client.default_headers["Flightctl-API-Version"] = "v1beta1"
+    client.default_headers["Authorization"] = f"Bearer {token}"
 
     return client
-
-
-def get_jwt_token() -> str:
-    """保存済みの JWT トークンを取得する"""
-    # 実際のアプリでは、セッションや環境変数から取得
-    import os
-    return os.environ.get("RHEM_API_TOKEN", "")
 
 
 # API インスタンスをエクスポート
@@ -101,6 +118,8 @@ _client = get_api_client()
 device_api = rhem_client.DeviceApi(_client)
 fleet_api = rhem_client.FleetApi(_client)
 ```
+
+> **注意**: 生成コードの `_auth_settings` が空リスト `[]` になっているため、`config.access_token` を設定しても Authorization ヘッダーが送信されません。`client.default_headers["Authorization"]` に直接設定する必要があります。
 
 ---
 
@@ -236,12 +255,13 @@ app = Flask(__name__)
 @app.route("/devices")
 def list_devices():
     """デバイス一覧を JSON で返す"""
-    site = request.args.get("site", "factory-a")
+    site = request.args.get("site")
 
     try:
-        response = device_api.list_devices(
-            label_selector=f"site={site}",
-        )
+        kwargs = {}
+        if site:
+            kwargs["label_selector"] = f"site={site}"
+        response = device_api.list_devices(**kwargs)
         return jsonify([
             {
                 "name": d.metadata.name,
@@ -386,6 +406,64 @@ config = rhem_client.Configuration(
 )
 config.proxy = "http://proxy.example.com:8080"
 ```
+
+### `failed to get auth token` エラー（認証）
+
+RHEM API は OIDC 認証を使用しており、ベーシック認証（`config.username` / `config.password`）では認証できません。
+また、生成コードの `_auth_settings` が空のため、`config.access_token` を設定しても Authorization ヘッダーが送信されません。
+
+**対処法**: OIDC トークンエンドポイントからパスワードグラントでトークンを取得し、`default_headers` に直接設定します（ステップ2のコード参照）。
+
+OIDC 設定は以下で確認できます：
+
+```bash
+# 認証プロバイダーの確認
+curl -k https://rhem01/api/v1/auth/config
+
+# OIDC well-known 設定の確認
+curl -k https://rhem01/_/pam-issuer/api/v1/auth/.well-known/openid-configuration
+```
+
+### `ApplicationProviderSpec` の oneOf デシリアライズエラー
+
+デバイス一覧取得時に以下のエラーが発生する場合があります：
+
+```
+ValueError: Multiple matches found when deserializing the JSON string
+into ApplicationProviderSpec with oneOf schemas: ComposeApplication,
+ContainerApplication, HelmApplication, QuadletApplication, VmApplication.
+```
+
+これは生成コードの `from_json` が oneOf の各スキーマを総当たりで試し、複数がマッチしてしまうためです。
+
+**対処法**: `models/application_provider_spec.py` の `from_json` メソッドを修正し、`appType` フィールドをディスクリミネーターとして使用します。
+
+```python
+# models/application_provider_spec.py の from_json メソッドの先頭に追加
+@classmethod
+def from_json(cls, json_str: str) -> Self:
+    instance = cls.model_construct()
+    data = json.loads(json_str)
+
+    # appType でスキーマを直接選択（ディスクリミネーター）
+    apptype_class_map = {
+        "compose": ComposeApplication,
+        "quadlet": QuadletApplication,
+        "container": ContainerApplication,
+        "helm": HelmApplication,
+        "vm": VmApplication,
+    }
+    app_type = data.get("appType") if isinstance(data, dict) else None
+    if app_type and app_type in apptype_class_map:
+        target_cls = apptype_class_map[app_type]
+        instance.actual_instance = target_cls.from_dict(data)
+        return instance
+
+    # appType がない場合はフォールバック（従来の総当たり）
+    ...
+```
+
+> **注意**: マップをクラス変数 `_APPTYPE_CLASS_MAP` として定義すると、Pydantic が `ModelPrivateAttr` として扱い `TypeError: argument of type 'ModelPrivateAttr' is not iterable` が発生します。必ずメソッド内のローカル変数として定義してください。
 
 ### `import rhem_client` で `AttributeError` が発生する
 
