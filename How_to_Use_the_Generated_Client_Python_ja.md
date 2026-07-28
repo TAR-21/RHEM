@@ -71,8 +71,11 @@ def get_api_client() -> rhem_client.ApiClient:
     # 1. 設定オブジェクトを作成
     config = rhem_client.Configuration(
         # API のベース URL
-        host="https://your-rhem-api-server/api/v1",
+        host="https://rhem01/api/v1",
     )
+
+    # 自己署名証明書を使用する場合は SSL 検証を無効化
+    config.verify_ssl = False
 
     # 動的な Bearer トークンを設定
     config.access_token = get_jwt_token()
@@ -330,7 +333,7 @@ API クライアントのリソースを適切に管理するために、コン�
 ```python
 import rhem_client
 
-config = rhem_client.Configuration(host="https://your-rhem-api-server/api/v1")
+config = rhem_client.Configuration(host="https://rhem01/api/v1")
 
 with rhem_client.ApiClient(config) as client:
     device_api = rhem_client.DeviceApi(client)
@@ -370,7 +373,7 @@ rhem_client/
 
 ```python
 config = rhem_client.Configuration(
-    host="https://your-rhem-api-server/api/v1",
+    host="https://rhem01/api/v1",
 )
 config.verify_ssl = False  # 開発環境のみ。本番では適切な証明書を使用すること
 ```
@@ -379,7 +382,7 @@ config.verify_ssl = False  # 開発環境のみ。本番では適切な証明書
 
 ```python
 config = rhem_client.Configuration(
-    host="https://your-rhem-api-server/api/v1",
+    host="https://rhem01/api/v1",
 )
 config.proxy = "http://proxy.example.com:8080"
 ```
