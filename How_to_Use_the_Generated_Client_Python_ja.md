@@ -384,6 +384,35 @@ config = rhem_client.Configuration(
 config.proxy = "http://proxy.example.com:8080"
 ```
 
+### `import rhem_client` で `AttributeError` が発生する
+
+生成されたコードで `NUMBER_` プレフィックス付きの enum 値を参照しているが、実際の enum 定義にはそのプレフィックスがないケースがあります。これは openapi-generator のバグです。
+
+```
+AttributeError: type object 'ImagePullPolicy' has no attribute 'NUMBER_PullIfNotPresent'.
+Did you mean: 'PullIfNotPresent'?
+```
+
+**対処法**: 該当ファイルの `NUMBER_` プレフィックスを削除します。
+
+```bash
+# 問題のある箇所を検索
+grep -rn 'NUMBER_' rhem_client/rhem_client/models/
+
+# 修正が必要だったファイル（本プロジェクトでの実例）:
+# - models/image_volume_source.py
+#     NUMBER_PullIfNotPresent → PullIfNotPresent
+# - models/resource_sync_spec.py
+#     NUMBER_ResourceSyncTypeFleet → ResourceSyncTypeFleet
+```
+
+修正後、再インストールします：
+
+```bash
+cd rhem_client
+pip install .
+```
+
 ### クライアントの再生成
 
 API 仕様（`openapi.yaml`）が更新された場合、クライアントを再生成して再インストールします：
@@ -399,3 +428,5 @@ npx @openapitools/openapi-generator-cli generate \
 cd rhem_client
 pip install .
 ```
+
+> **注意**: 再生成すると `NUMBER_` プレフィックスのバグが再発する可能性があります。再生成後は `grep -rn 'NUMBER_' rhem_client/rhem_client/models/` で確認してください。
