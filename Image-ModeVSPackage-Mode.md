@@ -1,6 +1,6 @@
 ## RHEM1.3
 
-## 英語版 (English Version)
+## English Version
 
 | Feature | Image-Mode | Package-Mode |
 | :--- | :---: | :---: |
