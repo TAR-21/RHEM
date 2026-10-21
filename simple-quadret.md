@@ -65,10 +65,23 @@ podman artifact push quay.io/tmorisu/simple-quadret:ubi10-v1
 Edge Manager の「デバイス仕様（Device Specification）」の YAML ファイルに、作成したアーティファクトを追加します。
 
 ```yaml
-applications:
-  - name: ubi10-app
-    type: quadlet
-    image: quay.io/tmorisu/simple-quadret:ubi10-v1
+apiVersion: flightctl.io/v1alpha1
+kind: CatalogItem
+metadata:
+  name: test03
+  catalog: infrastructure
+spec:
+  artifacts:
+  - type: container
+    uri: quay.io/tmorisu/simple-quadret
+  category: application
+  type: quadlet
+  versions:
+  - channels:
+    - stable
+    references:
+      container: ubi10-v1
+    version: 1.0.1
 ```
 
 ### ライフサイクルの挙動
